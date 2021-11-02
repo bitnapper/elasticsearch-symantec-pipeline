@@ -1,0 +1,587 @@
+PUT _ingest/pipeline/symantec
+{
+  "description": "Parse Symantec Endpoint Protection Manager Logs",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "%{SYSLOGBASE2}: %{GREEDYDATA:message}"
+        ],
+        "on_failure": [
+          {
+            "set": {
+              "description": "Set 'error.message'",
+              "field": "error.message",
+              "value": "{{ _ingest.on_failure_message }}"
+            }
+          },
+          {
+            "append": {
+              "description": "Append 'log.flags' on_failure",
+              "field": "log.flags",
+              "value": [
+                "parsing_error"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "grok": {
+        "field": "message",
+        "trace_match": true,
+        "patterns": [
+          """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),(?<message>.*?),(?:.*?):\s+(Risiken|Risks): (?<symantec.risks>\d+)%{GREEDYDATA},Gesamtanzahl Dateien: %{NUMBER:symantec.files_scanned},Übergangen: %{NUMBER:symantec.files_omitted},Computer: %{NOTSPACE:host.hostname},IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
+          """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),(?<message>.*?),,Befehl: (?<symantec.command>.*),Bedrohungen: (?<symantec.files_threat>[\d]+),Infiziert: (?<symantec.files_infected>[\d]+),Gesamtanzahl Dateien: (?<symantec.files_scanned>[\d]+),Übergangen: (?<symantec.files_omitted>[\d]+),Computer: (?<host.hostname>[^\s]*),IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
+          """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),Scan Beendet:  Risiken: (?<symantec.risks>\d+)%{GREEDYDATA},Gesamtanzahl Dateien: %{NUMBER:symantec.files_scanned},Übergangen: %{NUMBER:symantec.files_omitted},Computer: %{HOSTNAME:host.hostname},IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),IP des lokalen Host: %{IP:source.ip},Lokaler Port: (|(?<source.port>\d+)),Lokaler Host MAC: (?<source.mac>[a-fA-F0-9]{12}),IP des Remote-Host: (|%{IP:destination.ip}),Name des Remote-Host: (|(?<destination.domain>[^\s]*)),Remote-Port: (?<destination.port>\d*),Remote-Host MAC: (?<destination.mac>[a-fA-F0-9]{12}),(?<network.transport>[^\s]+),(?<network.direction>[^\s]+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Vorkommnisse: (?<symantec.event_amount>\d+),Anwendung: (|(?<file.path>.*?)),Regel: (?<rule.name>.*?),Ablageort: (?<symantec.alageort>.*?),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktion: (?<event.action>.*?),SHA-256: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),MD-5:\s?(|(?<file.hash.md5>[a-fA-F0-9]{32}))$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),IP des lokalen Host: %{IP:source.ip},Lokaler Port: (|(?<source.port>\d+)),IP des Remote-Host: %{IP:destination.ip},Name des Remote-Host: (|%{NOTSPACE:destination.domain}),Remote-Port: %{NUMBER:destination.port},%{WORD:network.direction},Anwendung: (|%{GREEDYDATA:file.path}),Aktion: %{WORD:event.action}$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),Kategorie: %{NUMBER:symantec.category},%{GREEDYDATA:symantec.kennung},(|\")Ereignisbeschreibung: (?<message>.*?)(|\"),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Gruppenname: %{GREEDYDATA:symantec.groups}$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),...,%{WORD:event.action},%{DATA:symantec.path},,Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Regel: ,%{NUMBER:event.id},%{DATA:file.path},%{NUMBER:symantec.unknown_value},,%{DATA:symantec.path},Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: %{NUMBER:event.id},Dateigröße \(Byte\): ,Geräte-ID:\s?$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),%{IP},%{WORD:event.action},(|\")(?<message>.*?)(| - Anrufer MD5=(?<file.hash.md5>\w*))(| - Zielargumente='(?<process.args>.*)')(|\"),(?<event.reason>.*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Regel: (?<rule.name>.*?),(?:\d+),(.*),(?:\d+),(.*),(?<file.path>.*),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: ,Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID:(?<symantec.deviceid>.*?)$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),%{IP},%{WORD:event.action},(|\")(?<message>.*?)(| - Anrufer MD5=(?<file.hash.md5>\w*))(| - Zielargumente='(?<process.args>.*)')(|\"),(?<event.reason>.*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Regel: (?<rule.name>.*?),(?:\d+),(|\")(?<file.path>.*?)(|\"),(?:\d+),(?<symantec.kennung>.*?),(|\")(?<symantec.path>.*?)(|\"),(|\")Benutzername: (?<symantec.username>.*?)(|\"),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: (?<event.id>\d*),Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID: (?<symantec.deviceid>.*?)$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*),(|\")Ereignisbeschreibung: (?<message>.*?)(|\"),IP des lokalen Host: %{IP:host.ip},Lokaler Host MAC: (?<host.mac>[a-fA-F0-9]{12}),Name des Remote-Host: ,IP des Remote-Host: (|%{IP:source.ip}),Remote-Host MAC: (?<source.mac>[a-fA-F0-9]{12}),%{WORD:network.direction},(?<network.transport>%{WORD}),(?<event.action>[^,]*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Vorkommnisse: %{NUMBER:symantec.event_amount},Anwendung: (?<file.path>.*),Ablageort: (?<symantec.alageort>.*),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Lokaler Port: (?<source.port>\d+),Remote-Port: (?<destination.port>\d+),CIDS-Signatur-ID: (0|(?<threat.technique.id>\d+)),CIDS-Signaturzeichenkette: (|(?<threat.technique.name>.*?)),CIDS-Signatur-SubID: (0|(?<threat.technique.subtechnique.id>\d+)),Intrusion-URL: (|(?<threat.indicator.url>[^\s]*?)),Intrusion-Payload-URL: (|(?<symantec.intrusion_payload.url>[^\s]*?)),SHA-256: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),MD-5:\s?(|(?<file.hash.md5>[a-fA-F0-9]{32}))\s?$""",
+          """^%{HOSTNAME:observer.hostname},(?<message>(?<event.reason>Virus gefunden)),IP-Adresse: (?<client.ip>%{IP}),Computername (?<host.hostname>.*?),Quelle: Auto-Protect-Scan,Risikoname: (?<threat.software.name>.*),Vorkommnisse: (?<symantec.event_amount>\d+),Dateipfad: (?<file.path>.*?),Beschreibung: (?:.*?),Tatsächliche Maßnahme: (?<event.action>[^,]*),Erforderliche Maßnahme: (?:.*?),Sekundäraktion: (?:.*?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Einfügedatum des Ereignisses: %{NOTSPACE} %{NOTSPACE},Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Zuletzt aktualisiert um: %{NOTSPACE} %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*?),Servername: %{HOSTNAME},Benutzername: (?<user.name>[^,]*),Name des Quellcomputers: (?:.*?),Anwendungs-Hash: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),Hash-Typ: (|%{WORD}),.*$""",
+          """^%{HOSTNAME:observer.hostname},(?<message>(?<event.reason>Sicherheitsrisiko gefunden)),IP-Adresse: (?<client.ip>%{IP}),Computername (?<host.hostname>.*?),Quelle: Start-Scan,Risikoname: (?<threat.software.name>.*),Vorkommnisse: (?<symantec.event_amount>\d+),Dateipfad: (?<file.path>.*?),Beschreibung: (?:.*?),Tatsächliche Maßnahme: (?<event.action>[^,]*),Erforderliche Maßnahme: (?:.*?),Sekundäraktion: (?:.*?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Einfügedatum des Ereignisses: %{NOTSPACE} %{NOTSPACE},Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Zuletzt aktualisiert um: %{NOTSPACE} %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*?),Servername: %{HOSTNAME},Benutzername: (?<user.name>[^,]*),Name des Quellcomputers: (?:.*?),IP-Adresse des Quellcomputers: .*$""",
+          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),(?<message>.*?),(?<host.hostname>[^,]*),(?<user.name>[^,]*)(?:[,]?)(?<user.domain>.*)?$""",
+          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Admin: (?<user.name>[^,]*),(|")Ereignisbeschreibung: (?<message>.*?)(|")$""",
+          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},(|")Ereignisbeschreibung: (?<message>.*?)(|")$"""
+        ],
+        "on_failure": [
+          {
+            "set": {
+              "description": "Set 'error.message'",
+              "field": "error.message",
+              "value": "{{ _ingest.on_failure_message }}"
+            }
+          },
+          {
+            "append": {
+              "description": "Append 'log.flags' on_failure",
+              "field": "log.flags",
+              "value": [
+                "parsing_error"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "grok": {
+        "field": "message",
+        "trace_match": true,
+        "patterns": [
+          """^Symantec Endpoint Protection – Engine-Version: (?<symantec.version>[\d\.]+)\s+Windows-Versionsinfo:\s+Betriebssystem: (?<host.os.name>.*) \((?<host.os.build>.*?)\s?\)\s+Netzwerkinfo:\s+No.0\s+(?:.*?)(?<symantec_mac0>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip0>[^\s]+)(?:\s+No.1\s+(?:.*?)(?<symantec_mac1>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip1>[^\s]+))?(?:\s+No.2\s+(?:.*?)(?<symantec_mac2>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip2>[^\s]+))?(?:\s+No.3\s+(?:.*?)(?<symantec_mac3>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip3>[^\s]+))?(?:\s+No.4\s+(?:.*?)(?<symantec_mac4>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip4>[^\s]+))?(?:\s+No.5\s+(?:.*?)(?<symantec_mac5>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip5>[^\s]+))?(?:\s+No.6\s+(?:.*?)(?<symantec_mac6>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip6>[^\s]+))?(?:\s+No.7\s+(?:.*?)(?<symantec_mac7>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})(?:.*?)(?<symantec_ip7>[^\s]+))?(|Sof)$"""
+        ],
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "set": {
+        "field": "host.name",
+        "value": "{{{host.hostname}}}"
+      }
+    },
+    {
+      "set": {
+        "field": "network.direction",
+        "value": "outbound",
+        "if": "ctx?.network?.direction == 'Ausgehend'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "network.direction",
+        "value": "inbound",
+        "if": "ctx?.network?.direction == 'Eingehend'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.action",
+        "value": "blocked",
+        "if": "ctx?.event?.action == 'Blockiert'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.action",
+        "value": "allowed",
+        "if": "ctx?.event?.action == 'Zugelassen'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.action",
+        "value": "next",
+        "if": "ctx?.event?.action == 'Weiter'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.action",
+        "value": "isolated",
+        "if": "ctx?.event?.action == 'Isoliert'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "description": "Index the ingest timestamp as 'event.ingested'",
+        "field": "event.ingested",
+        "value": "{{{_ingest.timestamp}}}"
+      }
+    },
+    {
+      "set": {
+        "field": "event.outcome",
+        "value": "aborted",
+        "if": "ctx?.event?.action == 'Unterbrochen'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "virus detected",
+        "if": "ctx?.event?.action == 'Virus gefunden'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.cve",
+        "if": "ctx?.symantec?.kennung == 'CVE'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.liveupdatamanager",
+        "if": "ctx?.symantec?.kennung == 'LiveUpdate Manager'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.smc",
+        "if": "ctx?.symantec?.kennung == 'Smc'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.sep",
+        "if": "ctx?.symantec?.kennung == 'Symantec Endpoint Protection'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.memoryexploitmitigationsystem",
+        "if": "ctx?.symantec?.kennung == 'Memory Exploit Mitigation System'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.networkintrusionprotectionsystem",
+        "if": "ctx?.symantec?.kennung == 'Network Intrusion Protection Sys'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.wss",
+        "if": "ctx?.symantec?.kennung == 'WSS'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.rebootmanager",
+        "if": "ctx?.symantec?.kennung == 'RebootManager'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.ntr",
+        "if": "ctx?.symantec?.kennung == 'NTR'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.rep",
+        "if": "ctx?.symantec?.kennung == 'REP'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.submissionsman",
+        "if": "ctx?.symantec?.kennung == 'SubmissionsMan'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.sonar",
+        "if": "ctx?.symantec?.kennung == 'SONAR'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "symantec.ips",
+        "if": "ctx?.symantec?.kennung == 'IPS'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "append": {
+        "field": "event.reason",
+        "value": [
+          "file read"
+        ],
+        "if": "ctx?.event?.action == 'Datei lesen'"
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip0}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip0') && ctx?.symantec_ip0 != '::1' && ctx?.symantec_ip0 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip1}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip1') && ctx?.symantec_ip1 != '::1' && ctx?.symantec_ip1 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip2}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip2') && ctx?.symantec_ip2 != '::1' && ctx?.symantec_ip2 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip3}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip3') && ctx?.symantec_ip3 != '::1' && ctx?.symantec_ip3 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip4}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip4') && ctx?.symantec_ip4 != '::1' && ctx?.symantec_ip4 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip5}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip5') && ctx?.symantec_ip5 != '::1' && ctx?.symantec_ip5 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip6}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip5') && ctx?.symantec_ip5 != '::1' && ctx?.symantec_ip5 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends ip to host.ip if not localhost",
+        "field": "host.ip",
+        "value": [
+          "{{{symantec_ip7}}}"
+        ],
+        "if": "ctx.containsKey('symantec_ip5') && ctx?.symantec_ip5 != '::1' && ctx?.symantec_ip5 != '127.0.0.1'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac0}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac0') && ctx?.symantec_mac0 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac1}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac1') && ctx?.symantec_mac1 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac2}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac2') && ctx?.symantec_mac2 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac3}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac3') && ctx?.symantec_mac3 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac4}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac4') && ctx?.symantec_mac4 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac5}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac5') && ctx?.symantec_mac5 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac6}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac6') && ctx?.symantec_mac6 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "append": {
+        "description": "appends mac to host.mac",
+        "field": "host.mac",
+        "value": [
+          "{{{symantec_mac5}}}"
+        ],
+        "if": "ctx.containsKey('symantec_mac7') && ctx?.symantec_mac7 != '00-00-00-00-00-00'",
+        "allow_duplicates": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "lowercase": {
+        "field": "network.transport",
+        "ignore_failure": true
+      }
+    },
+    {
+      "lowercase": {
+        "field": "user.name",
+        "ignore_failure": true
+      }
+    },
+    {
+      "lowercase": {
+        "field": "file.hash.md5",
+        "ignore_missing": true
+      }
+    },
+    {
+      "lowercase": {
+        "field": "file.hash.sha2",
+        "ignore_missing": true
+      }
+    },
+    {
+      "lowercase": {
+        "field": "file.hash.sha256",
+        "ignore_missing": true
+      }
+    },
+    {
+      "date": {
+        "field": "event.start",
+        "target_field": "event.start",
+        "formats": [
+          "yyyy-MM-dd HH:mm:ss"
+        ],
+        "if": "ctx.event?.start != null"
+      }
+    },
+    {
+      "date": {
+        "field": "event.end",
+        "target_field": "event.end",
+        "formats": [
+          "yyyy-MM-dd HH:mm:ss"
+        ],
+        "if": "ctx.event?.end != null"
+      }
+    },
+    {
+      "date": {
+        "field": "timestamp",
+        "formats": [
+          "MMM  d HH:mm:ss",
+          "MMM dd HH:mm:ss"
+        ]
+      }
+    },
+    {
+      "pipeline": {
+        "name": "mac_prettify",
+        "ignore_failure": true
+      }
+    },
+    {
+      "split": {
+        "field": "symantec.groups",
+        "separator": """\\""",
+        "ignore_missing": true
+      }
+    },
+    {
+      "remove": {
+        "field": "file.path",
+        "if": "ctx?.file?.path == 'Keine'"
+      }
+    },
+    {
+      "remove": {
+        "field": "user.name",
+        "if": "ctx?.user?.name == 'Keine'"
+      }
+    },
+    {
+      "remove": {
+        "field": "user.name",
+        "if": "ctx?.user?.name == 'none'"
+      }
+    },
+    {
+      "remove": {
+        "field": "user.domain",
+        "if": "ctx?.user?.domain == 'Keine'"
+      }
+    },
+    {
+      "remove": {
+        "field": [
+          "logsource",
+          "timestamp",
+          "symantec.kennung",
+          "symantec_ip0",
+          "symantec_ip1",
+          "symantec_ip2",
+          "symantec_ip3",
+          "symantec_ip4",
+          "symantec_ip5",
+          "symantec_ip6",
+          "symantec_ip7",
+          "symantec_mac0",
+          "symantec_mac1",
+          "symantec_mac2",
+          "symantec_mac3",
+          "symantec_mac4",
+          "symantec_mac5",
+          "symantec_mac6",
+          "symantec_mac7"
+        ],
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    }
+  ]
+}
