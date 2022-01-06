@@ -35,21 +35,22 @@ PUT _ingest/pipeline/symantec
         "patterns": [
           """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),(?<message>.*?),(?:.*?):\s+(Risiken|Risks): (?<symantec.risks>\d+)%{GREEDYDATA},Gesamtanzahl Dateien: %{NUMBER:symantec.files_scanned},Übergangen: %{NUMBER:symantec.files_omitted},Computer: (?<host.hostname>.*?),IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
           """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),(?<message>.*?),,Befehl: (?<symantec.command>.*),Bedrohungen: (?<symantec.files_threat>[\d]+),Infiziert: (?<symantec.files_infected>[\d]+),Gesamtanzahl Dateien: (?<symantec.files_scanned>[\d]+),Übergangen: (?<symantec.files_omitted>[\d]+),Computer: (?<host.hostname>.*?),IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
+		  """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),,(?:"?)(?<message>.*?)(?:"?),Befehl: (?<symantec.command>.*),Bedrohungen: (?<symantec.files_threat>[\d]+),Infiziert: (?<symantec.files_infected>[\d]+),Gesamtanzahl Dateien: (?<symantec.files_scanned>[\d]+),Übergangen: (?<symantec.files_omitted>[\d]+),Computer: (?<host.hostname>.*?),IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
           """^%{HOSTNAME:observer.hostname},Scan-ID: (?<symantec.scan-id>\d+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (|(?<event.end>%{NOTSPACE} %{NOTSPACE})),%{WORD:event.outcome},Dauer \(Sekunden\): (?<event.duration>\d+),Benutzer1: (?<user.name>[^,]*),Benutzer2: (?:[^,]*),Scan Beendet:  Risiken: (?<symantec.risks>\d+)%{GREEDYDATA},Gesamtanzahl Dateien: %{NUMBER:symantec.files_scanned},Übergangen: %{NUMBER:symantec.files_omitted},Computer: (?<host.hostname>.*?),IP-Adresse: %{IP:host.ip},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*),Servername: (?:[^\s]*),Scan Type: (?<symantec.scan_type>.*)$""",
           """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),IP des lokalen Host: %{IP:source.ip},Lokaler Port: (|(?<source.port>\d+)),Lokaler Host MAC: (?<source.mac>[a-fA-F0-9]{12}),IP des Remote-Host: (|%{IP:destination.ip}),Name des Remote-Host: (|(?<destination.domain>[^\s]*)),Remote-Port: (?<destination.port>\d*),Remote-Host MAC: (?<destination.mac>[a-fA-F0-9]{12}),(?<network.transport>[^\s]+),(?<network.direction>[^\s]+),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Vorkommnisse: (?<symantec.event_amount>\d+),Anwendung: (|(?<file.path>.*?)),Regel: (?<rule.name>.*?),Ablageort: (?<symantec.alageort>.*?),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktion: (?<event.action>.*?),SHA-256: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),MD-5:\s?(|(?<file.hash.md5>[a-fA-F0-9]{32}))$""",
           """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),IP des lokalen Host: %{IP:source.ip},Lokaler Port: (|(?<source.port>\d+)),IP des Remote-Host: %{IP:destination.ip},Name des Remote-Host: (|%{NOTSPACE:destination.domain}),Remote-Port: %{NUMBER:destination.port},%{WORD:network.direction},Anwendung: (|%{GREEDYDATA:file.path}),Aktion: %{WORD:event.action}$""",
-          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),Kategorie: %{NUMBER:symantec.category},%{GREEDYDATA:symantec.kennung},(|\")Ereignisbeschreibung: (?<message>.*?)(|\"),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Gruppenname: %{GREEDYDATA:symantec.groups}$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),Kategorie: %{NUMBER:symantec.category},%{GREEDYDATA:symantec.kennung},(?:"?)Ereignisbeschreibung: (?<message>.*?)(?:"?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Gruppenname: %{GREEDYDATA:symantec.groups}$""",
           """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),...,%{WORD:event.action},(?:.*?),(?<message>.*?),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Regel: ,%{NUMBER:event.id},(?<file.path>.*?),(?:[\d]+),,(?:.*?),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: (?<event.id>[\d]+),Dateigröße \(Byte\): ,Geräte-ID:\s?$""",
-          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),%{IP},%{WORD:event.action},(|\")(?<message>.*?)(| - Anrufer MD5=(?<file.hash.md5>\w*))(| - Zielargumente='(?<process.args>.*)')(|\"),(?<event.reason>.*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),(|")Regel: (?<rule.name>.*?)(|"),(?:\d+),(.*),(?:\d+),(.*),(?<file.path>.*),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: ,Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID:(?<symantec.deviceid>.*?)$""",
-          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),%{IP},%{WORD:event.action},(|\")(?<message>.*?)(| - Anrufer MD5=(?<file.hash.md5>\w*))(| - Zielargumente='(?<process.args>.*)')(|\"),(?<event.reason>.*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),(|")Regel: (?<rule.name>.*?)(|"),(?:\d+),(|\")(?<file.path>.*?)(|\"),(?:\d+),(?<symantec.kennung>.*?),(|\")(?<symantec.path>.*?)(|\"),(|\")Benutzername: (?<symantec.username>.*?)(|\"),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: (?<event.id>\d*),Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID: (?<symantec.deviceid>.*?)$""",
-          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),(|\")Ereignisbeschreibung: (?<message>.*?)(|\"),IP des lokalen Host: %{IP:host.ip},Lokaler Host MAC: (?<host.mac>[a-fA-F0-9]{12}),Name des Remote-Host: ,IP des Remote-Host: (|%{IP:source.ip}),Remote-Host MAC: (?<source.mac>[a-fA-F0-9]{12}),%{WORD:network.direction},(?<network.transport>%{WORD}),(?<event.action>[^,]*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Vorkommnisse: %{NUMBER:symantec.event_amount},Anwendung: (?<file.path>.*),Ablageort: (?<symantec.alageort>.*?),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Lokaler Port: (?<source.port>\d+),Remote-Port: (?<destination.port>\d+),CIDS-Signatur-ID: (0|(?<threat.technique.id>\d+)),CIDS-Signaturzeichenkette: (|(?<threat.technique.name>.*?)),CIDS-Signatur-SubID: (0|(?<threat.technique.subtechnique.id>\d+)),Intrusion-URL: (|(?<threat.indicator.url>[^\s]*?)),Intrusion-Payload-URL: (|(?<symantec.intrusion_payload.url>[^\s]*?)),SHA-256: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),MD-5:\s?(|(?<file.hash.md5>[a-fA-F0-9]{32}))\s?$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),%{IP},%{WORD:event.action},(?:"?)(?<message>.*?)(?: - Anrufer MD5=(?<file.hash.md5>\w*?))(| - Zielargumente='(?<process.args>.*?)')(?:"?),(?<event.reason>.*?),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),(?:"?)Regel: (?<rule.name>.*?)(?:"?),(?:\d+),(.*),(?:\d+),(.*),(?<file.path>.*),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: ,Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID:(?<symantec.deviceid>.*?)$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),%{IP},%{WORD:event.action},(?:"?)(?<message>.*?)(?: - Anrufer MD5=(?<file.hash.md5>\w*?))(| - Zielargumente='(?<process.args>.*?)')(?:"?),(?<event.reason>.*?),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),(?:"?)Regel: (?<rule.name>.*?)(?:"?),(?:\d+),(?:"?)(?<file.path>.*?)(?:"?),(?:\d+),(?<symantec.kennung>.*?),(?:"?)(?<symantec.path>.*?)(?:"?),(?:"?)Benutzername: (?<symantec.username>.*?)(?:"?),Domänenname: (|(?<server.domain>.*?)),Aktionstyp: (?<event.id>\d*),Dateigröße \(Byte\): (?<file.size>\d*),Geräte-ID: (?<symantec.deviceid>.*?)$""",
+          """^%{HOSTNAME:observer.hostname},(?<host.hostname>.*?),(?:"?)Ereignisbeschreibung: (?<message>.*?)(?:"?),IP des lokalen Host: %{IP:host.ip},Lokaler Host MAC: (?<host.mac>[a-fA-F0-9]{12}),Name des Remote-Host: ,IP des Remote-Host: (|%{IP:source.ip}),Remote-Host MAC: (?<source.mac>[a-fA-F0-9]{12}),%{WORD:network.direction},(?<network.transport>%{WORD}),(?<event.action>[^,]*),Start: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Vorkommnisse: %{NUMBER:symantec.event_amount},Anwendung: (?<file.path>.*),Ablageort: (?<symantec.alageort>.*?),Benutzername: (?<user.name>[^,]*),Domänenname: (|(?<server.domain>.*?)),Lokaler Port: (?<source.port>\d+),Remote-Port: (?<destination.port>\d+),CIDS-Signatur-ID: (0|(?<threat.technique.id>\d+)),CIDS-Signaturzeichenkette: (|(?<threat.technique.name>.*?)),CIDS-Signatur-SubID: (0|(?<threat.technique.subtechnique.id>\d+)),Intrusion-URL: (|(?<threat.indicator.url>[^\s]*?)),Intrusion-Payload-URL: (|(?<symantec.intrusion_payload.url>[^\s]*?)),SHA-256: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),MD-5:\s?(|(?<file.hash.md5>[a-fA-F0-9]{32}))\s?$""",
           """^%{HOSTNAME:observer.hostname},(?<message>(?<event.reason>Virus gefunden)),IP-Adresse: (?<client.ip>%{IP}),Computername (?<host.hostname>.*?),Quelle: Auto-Protect-Scan,Risikoname: (?<threat.software.name>.*),Vorkommnisse: (?<symantec.event_amount>\d+),Dateipfad: (?<file.path>.*?),Beschreibung: (?:.*?),Tatsächliche Maßnahme: (?<event.action>[^,]*),Erforderliche Maßnahme: (?:.*?),Sekundäraktion: (?:.*?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Einfügedatum des Ereignisses: %{NOTSPACE} %{NOTSPACE},Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Zuletzt aktualisiert um: %{NOTSPACE} %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*?),Servername: %{HOSTNAME},Benutzername: (?<user.name>[^,]*),Name des Quellcomputers: (?:.*?),Anwendungs-Hash: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),Hash-Typ: (|%{WORD}),.*$""",
           """^%{HOSTNAME:observer.hostname},(?<message>(?<event.reason>Sicherheitsrisiko gefunden)),IP-Adresse: (?<client.ip>%{IP}),Computername (?<host.hostname>.*?),Quelle: Start-Scan,Risikoname: (?<threat.software.name>.*),Vorkommnisse: (?<symantec.event_amount>\d+),Dateipfad: (?<file.path>.*?),Beschreibung: (?:.*?),Tatsächliche Maßnahme: (?<event.action>[^,]*),Erforderliche Maßnahme: (?:.*?),Sekundäraktion: (?:.*?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Einfügedatum des Ereignisses: %{NOTSPACE} %{NOTSPACE},Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Zuletzt aktualisiert um: %{NOTSPACE} %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*?),Servername: %{HOSTNAME},Benutzername: (?<user.name>[^,]*),Name des Quellcomputers: (?:.*?),IP-Adresse des Quellcomputers: .*$""",
 		  """^%{HOSTNAME:observer.hostname},(?<message>(?<event.reason>Sicherheitsrisiko gefunden)),Computername (?<host.hostname>.*?),IP-Adresse: (?<client.ip>%{IP}),Erkennungstyp: (?:.*?),Zuerst aufgetreten: (?:.*?),Anwendungsname: (?<symantec.software.name>.*?),Anwendungstyp: (?<threat.software.type>.*?),Anwendungsversion: (?<symantec.software.version>.*?),Hash-Typ: SHA-256,Anwendungs-Hash: (|(?<file.hash.sha256>[a-fA-F0-9]{64})),Firmenname: (?:.*?),Dateigröße \(Byte\): (?<file.size>\d*),Empfindlichkeit: (?:[\d]*),Erkennungsergebnis: (?:[\d]*),(?:.*?),Download-Website: (?<symantec.threat.url>.*?),(?:.*?),Risikostufe: (?<vulnerability.severity>[^\s]+),Risikotyp: (?<symantec.risk_type>[^\s]+),Quelle: (?<event.dataset>.*?),Risikoname: (?<threat.software.name>.*?),Vorkommnisse: (?<symantec.event_amount>\d+),(?<file.path>.*?),,Tatsächliche Maßnahme: (?<event.action>.*?),Erforderliche Maßnahme: (?:.*?),Sekundäraktion: (?:.*?),Uhrzeit des Ereignisses: (?<event.start>%{NOTSPACE} %{NOTSPACE}),Einfügedatum des Ereignisses: %{NOTSPACE} %{NOTSPACE},Endzeit: (?<event.end>%{NOTSPACE} %{NOTSPACE}),Domänenname: (|(?<server.domain>.*?)),Gruppenname: (?<symantec.groups>.*?),Servername: %{HOSTNAME},Benutzername: (?<user.name>.*?),Name des Quellcomputers: (?:.*?),IP-Adresse des Quellcomputers: (?:.*?),Ablageort: (?<symantec.alageort>.*?),.*$""",
           """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),(?<message>.*?),(?<host.hostname>.*?),(?<user.name>[^,]*)(?:[,]?)(?<user.domain>.*)?$""",
-          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Admin: (?<user.name>[^,]*),(|")Ereignisbeschreibung: (?<message>.*?)(|")$""",
+          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Admin: (?<user.name>[^,]*),(?:"?)Ereignisbeschreibung: (?<message>.*?)(?:"?)$""",
 		  """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},Domänenname: (|(?<server.domain>.*?)),Admin: (?<user.name>[^,]*),EventContent:(?<message>.*)$""",
-          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},(|")Ereignisbeschreibung: (?<message>.*?)(|")$"""
+          """^%{HOSTNAME:observer.hostname},Standort: (?<observer.geo.name>.*),Servername: %{NOTSPACE},(?:"?)Ereignisbeschreibung: (?<message>.*?)(?:"?)$"""
         ],
         "on_failure": [
           {
@@ -76,18 +77,10 @@ PUT _ingest/pipeline/symantec
         "field": "message",
         "trace_match": true,
         "patterns": [
-          """^Symantec Endpoint Protection (?:[^\s]+) Engine-Version: (?<symantec.version>[\d\.]+)\s+Windows-Versionsinfo:\s+Betriebssystem: (?<host.os.name>.*) \((?<host.os.build>.*?)\s?\)\s+Netzwerkinfo:\s+No.0\s+(?:.*?)\s+(?<symantec_mac0>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip0>[^\s]+)(?:\s+No.1\s+(?:.*?)\s+(?<symantec_mac1>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip1>[^\s]+))?(?:\s+No.2\s+(?:.*?)\s+(?<symantec_mac2>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip2>[^\s]+))?(?:\s+No.3\s+(?:.*?)\s+(?<symantec_mac3>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip3>[^\s]+))?(?:\s+No.4\s+(?:.*?)\s+(?<symantec_mac4>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip4>[^\s]+))?(?:\s+No.5\s+(?:.*?)\s+(?<symantec_mac5>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip5>[^\s]+))?(?:\s+No.6\s+(?:.*?)\s+(?<symantec_mac6>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip6>[^\s]+))?(?:\s+No.7\s+(?:.*?)\s+(?<symantec_mac7>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip7>[^\s]+))?(|Sof)$"""
+          """^Symantec Endpoint Protection (?:[^\s]+) Engine-Version: (?<symantec.version>[\d\.]+)\s+Windows-Versionsinfo:\s+Betriebssystem: (?<host.os.name>.*) \((?<host.os.build>.*?)\s?\)\s+Netzwerkinfo:\s+No.0\s+(?:.*?)\s+(?<symantec_mac0>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip0>%{IP})(?:\s+No.1\s+(?:.*?)\s+(?<symantec_mac1>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip1>%{IP}))?(?:\s+No.2\s+(?:.*?)\s+(?<symantec_mac2>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip2>%{IP}))?(?:\s+No.3\s+(?:.*?)\s+(?<symantec_mac3>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip3>%{IP}))?(?:\s+No.4\s+(?:.*?)\s+(?<symantec_mac4>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip4>%{IP}))?(?:\s+No.5\s+(?:.*?)\s+(?<symantec_mac5>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip5>[^\s]+))?(?:\s+No.6\s+(?:.*?)\s+(?<symantec_mac6>([a-fA-F0-9]{2}[-]){5}[a-fA-F0-9]{2})\s+(?:.*?)\s+(?<symantec_ip6>%{IP}))?(?:\s+No.7\s+(?:.*?))?(|Sof)$"""
         ],
         "ignore_missing": true,
-        "on_failure": [
-          {
-            "set": {
-              "description": "Index document to '<index>-failed'",
-              "field": "_index",
-              "value": "{{{ _index }}}-failed"
-            }
-          }
-        ]
+        "ignore_failure" : true
       }
     },
     {
@@ -154,8 +147,17 @@ PUT _ingest/pipeline/symantec
     {
       "set": {
         "field": "event.outcome",
+        "value": "interrupted",
+        "if": "ctx?.event?.action == 'Unterbrochen'",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.outcome",
         "value": "aborted",
-        "if": "ctx?.event?.action == 'Unterbrochen'"
+        "if": "ctx?.event?.action == 'Abgebrochen'",
+        "ignore_empty_value": true
       }
     },
     {
@@ -163,6 +165,62 @@ PUT _ingest/pipeline/symantec
         "field": "event.reason",
         "value": "virus detected",
         "if": "ctx?.event?.action == 'Virus gefunden'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "write file",
+        "if": "ctx?.event?.action == 'Datei schreiben' || ctx?.event?.action == 'File Write'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "read file",
+        "if": "ctx?.event?.action == 'Datei lesen' || ctx?.event?.action == 'File Read'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "delete file",
+        "if": "ctx?.event?.action == 'Löschen von Dateien' || ctx?.event?.action == 'File Delete'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "create process",
+        "if": "ctx?.event?.action == 'Prozess erstellen' || ctx?.event?.action == 'Create Process'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "load dll",
+        "if": "ctx?.event?.action == 'DLL laden'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "system",
+        "if": "ctx?.event?.action == 'System'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "write registry",
+        "if": "ctx?.event?.action == 'Registrierung schreiben' || ctx?.event?.action == 'Registry Write'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.reason",
+        "value": "found risk",
+        "if": "ctx?.event?.action == 'Sicherheitsrisiko gefunden'"
       }
     },
     {
